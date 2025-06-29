@@ -352,6 +352,9 @@ static void xytonode(double x, double y, struct wlr_surface **psurface,
 		Client **pc, LayerSurface **pl, double *nx, double *ny);
 static void zoom(const Arg *arg);
 
+static bool is_focused_app_id(const char* app_id, const struct wlr_seat *s);
+
+
 /* variables */
 static pid_t child_pid = -1;
 static int locked;
@@ -1605,6 +1608,35 @@ inputdevice(struct wl_listener *listener, void *data)
 	wlr_seat_set_capabilities(seat, caps);
 }
 
+bool is_focused_app_id(const char* app_id, const struct wlr_seat *s)
+{
+    struct wlr_surface *focused = s->keyboard_state.focused_surface;
+    if (! focused)
+        return false;
+
+    const struct wlr_xdg_surface *xdg_surface = wlr_xdg_surface_try_from_wlr_surface(focused);
+
+    return
+        xdg_surface &&
+        xdg_surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL &&
+        strcmp(app_id, xdg_surface->toplevel->app_id) == 0;
+}
+
+
+static bool is_key_bypassed_to_emacs(const Key* k)
+{
+    xkb_keysym_t captured_keysyms[] = {XKB_KEY_1, XKB_KEY_2, XKB_KEY_3, XKB_KEY_4, XKB_KEY_5, XKB_KEY_6, XKB_KEY_7, XKB_KEY_8, XKB_KEY_9};
+    bool is_in_keys = false;
+    xkb_keysym_t* keysym = NULL;
+
+    for(keysym = captured_keysyms; keysym < END(captured_keysyms); keysym++)
+    {
+        is_in_keys = is_in_keys || (*keysym == k->keysym);
+    }
+
+    return is_in_keys;
+}
+
 int
 keybinding(uint32_t mods, xkb_keysym_t sym)
 {
@@ -1613,13 +1645,22 @@ keybinding(uint32_t mods, xkb_keysym_t sym)
 	 * processing keys, rather than passing them on to the client for its own
 	 * processing.
 	 */
+    const bool is_emacs = is_focused_app_id("emacs", seat);
+
 	const Key *k;
-	for (k = keys; k < END(keys); k++) {
-		if (CLEANMASK(mods) == CLEANMASK(k->mod)
-				&& sym == k->keysym && k->func) {
-			k->func(&k->arg);
-			return 1;
-		}
+	for (k = keys; k < END(keys); k++)
+        {
+            if ( is_emacs && !is_key_bypassed_to_emacs(k) )
+            {
+                continue;
+            }
+
+            if (CLEANMASK(mods) == CLEANMASK(k->mod)
+                && sym == k->keysym && k->func)
+            {
+                k->func(&k->arg);
+                return 1;
+            }
 	}
 	return 0;
 }
@@ -1647,8 +1688,8 @@ keypress(struct wl_listener *listener, void *data)
 	/* On _press_ if there is no active screen locker,
 	 * attempt to process a compositor keybinding. */
 	if (!locked && event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
-		for (i = 0; i < nsyms; i++)
-			handled = keybinding(mods, syms[i]) || handled;
+            for (i = 0; i < nsyms; i++)
+                handled = keybinding(mods, syms[i]) || handled;
 	}
 
 	if (handled && group->wlr_group->keyboard.repeat_info.delay > 0) {
