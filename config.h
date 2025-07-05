@@ -121,12 +121,14 @@ static const char *termcmd[] = { "foot", "-f", "terminus:size=24", NULL};
 static const char *menucmd[] = { "wmenu-run", NULL };
 static const char *lock_cmd[] = { "wlock", NULL };
 static const char *screen_cmd[] = { "/home/rsalmin/bin/take_screenshot_wayland.sh", NULL };
+static const char *mpc_toggle_cmd[] = { "mpc", "toggle", NULL };
 
 #include "keys.h"
 static const Key keys[] = {
 	/* modifier                  key          function        argument */
         { 0,                         Key_F12,          spawn,        {.v = lock_cmd} },
         { 0,                         Key_Print,        spawn,        {.v = screen_cmd} },
+        { 0,                         Key_XF86AudioPlay,         spawn,        {.v = mpc_toggle_cmd} },
 
 	{ MODKEY,                    Key_p,       spawn,          {.v = menucmd} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, Key_Return,  spawn,          {.v = termcmd} },
