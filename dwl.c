@@ -1633,6 +1633,8 @@ static bool is_key_bypassed_to_emacs(const Key* k)
         is_in_keys = is_in_keys || (*keycode == k->keycode);
     }
 
+    is_in_keys == is_in_keys || ( Key_space == k->keycode && MODKEY == k->mod );
+
     return is_in_keys;
 }
 
