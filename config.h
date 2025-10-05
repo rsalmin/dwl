@@ -55,7 +55,7 @@ static const MonitorRule monrules[] = {
 static const struct xkb_rule_names xkb_rules = {
     /* can specify fields: rules, model, layout, variant, options */
     .layout = "us,ru",
-    .options = "grp:lalt_lshift_toggle",
+    .options = "ctrl:nocaps,grp:lalt_lshift_toggle",
 };
 
 static const int repeat_rate = 25;
